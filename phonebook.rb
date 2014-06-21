@@ -4,6 +4,7 @@ require 'optparse'
 require 'pp'
 
 class Phonebook
+  attr_reader :file_name, :entries
 
   def self.create(file_name)
     puts "File created with name #{file_name}"
@@ -169,5 +170,9 @@ def init_options
   end
 end
 
+if __FILE__ == $0
 # start program
-init_options
+  init_options
+end
+
+
