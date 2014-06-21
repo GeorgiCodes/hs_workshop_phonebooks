@@ -35,15 +35,7 @@ class Phonebook
   end
 
   def reverse(number)
-    puts "Phonebook entries for number #{number} are: "
-    result = find number
-    puts result
-  end
-
-  def find(number)
-    @entries.find do |key, value|
-      value.equal? number
-    end
+    @entries.invert[number]
   end
 
   def contains_name? name
