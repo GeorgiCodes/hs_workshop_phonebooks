@@ -28,6 +28,7 @@ class Phonebook
     write_hash_to_file
   end
 
+  # fuzzy search
   def lookup(name)
     @entries.select do |key, value|
       key.include? name
@@ -80,6 +81,7 @@ class Phonebook
 
 end
 
+# interacts with model and prints out results to console
 class PhonebookController
 
   def initialize file_name
@@ -118,8 +120,14 @@ class PhonebookController
     puts "Removed entry from phonebook"
   end
 
-  def reverse
-
+  def reverse number
+    entry = @phonebook.reverse number
+    unless(entry.nil?)
+      puts "Phonebook entry for number #{number}: "
+      puts entry + " " + number
+    else
+      puts "No phonebook entry for number #{number} " unless !entry.nil?
+    end
   end
 end
 
@@ -157,8 +165,8 @@ def init_options
       controller = PhonebookController.new(values[-1])
       controller.remove(values.first)
     when "reverse"
-      phonebook = Phonebook.new(values[-1])
-      phonebook.reverse(values.first)
+      controller = PhonebookController.new(values[-1])
+      controller.reverse(values.first)
   end
 end
 
