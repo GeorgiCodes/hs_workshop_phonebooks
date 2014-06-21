@@ -3,146 +3,171 @@
 require 'optparse'
 require 'pp'
 
-# options = {}
-#
-# parser = OptionParser.new do |opts|
-#   opts.on("-create") do |file_name|
-#     options[:file_name] = file_name
-#     puts options
-#   end
-#
-#   opts.on("-add") do |values|
-#     puts "asdlfkjasdl;flaksdjf"
-#
-#     values.shift
-#     puts "Values are #{values}"
-#     # if (values.length < 3)
-#     #   raise "Incorrect number of arguments."
-#     # end
-#
-#     # TODO: check types of values
-#     entry = {}
-#     entry[:file_name] = values[-1]
-#     entry[:name] = values.first
-#     entry[:number] = values[1]
-#     puts entry
-#
-#     add(entry)
-#
-#   end
-# end
-
-class Person
-  attr_accessor :name, :number
-
-  def initialize(name, number)
-    @name = name
-    @number = number
-  end
-
-  def to_s
-    @name + ", " + @number
-  end
-end
-
 class Phonebook
+
+  def self.create(file_name)
+    puts "File created with name #{file_name}"
+    File.write file_name, ""
+    Phonebook.new(file_name)
+  end
 
   def initialize(file_name)
     @entries = {}
     @file_name = file_name
-    read_file_into_hash()
+    init_hash_from_file
   end
 
-  def add(options)
-    person = add_person_to_hash(options[:name], options[:number])
-    add_person_to_phonebook_file(person)
+  def add(name, number)
+    add_entry_to_hash name, number
+    write_hash_to_file
+  end
+
+  def remove(name)
+    remove_entry_from_hash name
+    write_hash_to_file
   end
 
   def lookup(name)
+    @entries.select do |key, value|
+      key.include? name
+    end
+  end
+
+  def reverse(number)
+    puts "Phonebook entries for number #{number} are: "
+    result = find number
+    puts result
+  end
+
+  def find(number)
+    @entries.find do |key, value|
+      value.equal? number
+    end
+  end
+
+  def contains_name? name
+    @entries.has_key? name
+  end
+
+  def init_hash_from_file()
+    if(!File.exist?(@file_name))
+      return {}
+    end
+
+    file_contents = File.open("./" + @file_name)
+    file_contents.each do |line|
+      values = line.split(",").map(&:strip)
+      # TODO: sanitize phone numbers?
+      @entries[values.first] = values.last
+    end
+    return @entries
+  end
+
+  def write_hash_to_file()
+    begin
+      File.truncate(@file_name, 0)
+      File.open(@file_name, 'w') do |file|
+        @entries.each do |key, value|
+          file.puts key + ", " + value
+        end
+      end
+    rescue
+      return false
+    end
+    return true
+  end
+
+  def add_entry_to_hash(name, number)
+    @entries[name] = number
+  end
+
+  def remove_entry_from_hash(name)
+    @entries.delete(name)
+  end
+
+end
+
+class PhonebookController
+
+  def initialize file_name
+    @phonebook = Phonebook.new file_name
+  end
+
+  def create file_name
+    @phonebook = Phonebook.create file_name
+  end
+
+  def lookup name
+    filtered = @phonebook.lookup name
     puts "Phonebook entries for name #{name} are: "
-    @entries.each do |key, value|
-      if(key.include? name)
-        puts value.to_s
-      end
+    filtered.each do |key, value|
+      puts key + " " + value
     end
   end
 
-  def read_file_into_hash()
-    # begin
-      file_contents = File.open("./" + @file_name)
-      file_contents.each do |line|
-        values = line.split(",").map(&:strip)
-        @entries[values.first] = Person.new(values.first, values.last)
-      end
-      puts @entries
-    #
-    #   puts "files_contents are #{@entries}"
-    # rescue
-    #   puts Dir.pwd
-    #   puts "Phonebook file #{file_name} doesn't exist, you must create it first."
-    # end
-  end
-
-  def add_person_to_phonebook_file(person)
-    open(@file_name, 'a') do |file|
-      file.puts person.to_s
-    end
-  end
-
-  def add_person_to_hash(name, number)
-    person = Person.new(name, number)
-
-    # TODO: This feature is not working
-    if (@entries.has_value?(person))
-      raise "Duplicate entry, person is already in phonebook"
+  def add name, number
+    if(@phonebook.contains_name? name)
+      puts "Duplicate entry, #{name} is already in phonebook"
+      return
     end
 
-    @entries[name] = person
-    puts "Added person to hash #{@entries}"
-    return person
+    @phonebook.add name, number
+    puts "Added entry to phonebook"
   end
 
+  def remove name
+    if(!@phonebook.contains_name? name)
+      puts "Entry with name #{name} not found, can't delete"
+      return
+    end
+
+    @phonebook.remove name
+    puts "Removed entry from phonebook"
+  end
+
+  def reverse
+
+  end
 end
 
 def init_options
+  args_hash = {"create" => 1, "lookup" => 2, "add" => 3, "remove" => 2, "reverse" => 2}
+
+  # check argument length
+  num_expected_args = args_hash[ARGV[0]]
+  if (num_expected_args.nil?)
+    puts "Must use one of #{args_hash.keys.to_a}"
+  end
+  if(ARGV[1..-1].length != num_expected_args)
+    puts "Number of expected arguemnts should be #{num_expected_args}"
+  end
+
+  # check file exists
+  if ARGV[0] != "create"
+    if(!File.exist?(ARGV.last))
+      puts "File with name #{ARGV.last} doesn't exist, you must create it first"
+      return -1
+    end
+  end
+
+  values = ARGV[1..-1]
   case ARGV[0]
+    when "create"
+      PhonebookController.create values.last
     when "lookup"
-      values = ARGV[1..-1]
-      puts "Arguments are #{values}"
-
-      if (values.length < 2)
-        raise "Incorrect number of arguments."
-      end
-
-      phonebook = Phonebook.new(values[-1])
-      phonebook.lookup(values.first)
-
+      controller = PhonebookController.new values.last
+      controller.lookup(values.first)
     when "add"
-      values = ARGV[1..-1]
-      puts "Arguments are #{values}"
-
-      if (values.length < 3)
-        raise "Incorrect number of arguments."
-      end
-
-      entry = {}
-      entry[:name] = values.first
-      entry[:number] = values[1]
-
+      controller = PhonebookController.new(values[-1])
+      controller.add(values.first, values[1])
+    when "remove"
+      controller = PhonebookController.new(values[-1])
+      controller.remove(values.first)
+    when "reverse"
       phonebook = Phonebook.new(values[-1])
-      phonebook.add(entry)
+      phonebook.reverse(values.first)
   end
 end
+
+# start program
 init_options
-
-# Parase and print options
-
-# Parse the command-line. Remember there are two forms
-# of the parse method. The 'parse' method simply parses
-# ARGV, while the 'parse!' method parses ARGV and removes
-# any options found there, as well as any parameters for
-# the options. What's left is the list of files to resize
-# parser.parse!
-# pp "Options:", options
-# pp "ARGV:", ARGV
-
