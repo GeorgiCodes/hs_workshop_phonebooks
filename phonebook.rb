@@ -9,7 +9,7 @@ class Phonebook
   def self.create(file_name)
     puts "File created with name #{file_name}"
     File.write file_name, ""
-    Phonebook.new(file_name)
+    self.new(file_name)
   end
 
   def initialize(file_name)
@@ -140,7 +140,7 @@ def init_options
     puts "Must use one of #{args_hash.keys.to_a}"
   end
   if(ARGV[1..-1].length != num_expected_args)
-    puts "Number of expected arguemnts should be #{num_expected_args}"
+    puts "Number of expected arguments should be #{num_expected_args}"
   end
 
   # check file exists
